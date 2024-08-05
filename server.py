@@ -33,4 +33,4 @@ def historyWithLineID(user):
 
 if __name__ == '__main__': 
     AI.loadChatSession()
-    app.run(port="8888") 
+    app.run(host='0.0.0.0') 
