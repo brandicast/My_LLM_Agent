@@ -97,14 +97,13 @@ def historyPersistentJob () :
 
 def historyPersistent():
     if not sessions_cache is None:
+            now = time.time()
             for key in sessions_cache:
-                history = sessions_cache[key].chat.history
-                logger.debug(key) 
-                logger.debug(type(history))
-                logger.debug(history)
-                if history :
-                    with open('history/'+key, 'wb') as file:
-                        pickle.dump(history, file)
+                if now < sessions_cache[key].timestamp:
+                    history = sessions_cache[key].chat.history
+                    if history :
+                        with open('history/'+key, 'wb') as file:
+                            pickle.dump(history, file)
 
 
 job = threading.Thread(target=historyPersistentJob)    
