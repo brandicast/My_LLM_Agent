@@ -18,7 +18,7 @@ sessions_cache = {}   # Hold a session cache
 
 GRACEFULLY_STOP = False 
 
-with open('system_instruction.txt') as f:
+with open('./resources/system_instruction.txt', encoding='utf-8') as f:
     instruction = f.read ()
     logger.debug(instruction)
 
