@@ -15,5 +15,7 @@ RUN mkdir -p history
 
 ENV API_KEY={$YOU_API_KEY}
 
+VOLUME ['./history']
+
 # Container 啟動指令：Container 啟動後通過 python 運行 server.py
 CMD ["python", "./server.py"]
