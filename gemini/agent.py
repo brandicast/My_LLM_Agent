@@ -3,7 +3,7 @@ import google.generativeai as genai
 import os, time, threading, pickle
 
 
-from lib.typing import Session
+from util.typing import Session
 
 
 
