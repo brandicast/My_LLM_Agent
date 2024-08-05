@@ -21,7 +21,7 @@ def askWithLineID(user):
     answer = AI.ask (user, ask) 
 
 
-    return ("AI answers: " + str(answer))
+    return (str(answer))
 
 @app.route('/chat/history/<user>')
 def historyWithLineID(user):
