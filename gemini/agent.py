@@ -1,4 +1,5 @@
 import google.generativeai as genai
+from google.generativeai.types.generation_types import StopCandidateException
 
 import os, time, threading, pickle
 
@@ -48,7 +49,7 @@ def loadChatSession ():
 
 
 def ask (id, content):
-
+    answer = "哇，不知道怎麼回答這個問題"
     if id not in sessions_cache:
         logger.debug ("No Chat session is found for : " + str(id) + ". Starts a new chat session")
 
@@ -65,11 +66,17 @@ def ask (id, content):
     
     logger.debug (session)
     #logger.debug (chat.history)
-    
-    response = session.chat.send_message(content)
-    session.timestamp = time.time()
+    try:
+        response = session.chat.send_message(content)
+        session.timestamp = time.time()
+        answer = response.text
+    except StopCandidateException as safety_exception :
+        logger.error ("Error occurred when user ask : " + content + "  with exception : " + str(safety_exception)) 
+        answer = "為了保護你，這個問題就不回答了"
+    except Exception as e:
+        logger.error ("Error occurred when user ask : " + content + "  with exception : " + str(e)) 
 
-    return response.text
+    return answer
 
 
 def getModel ():
@@ -79,7 +86,9 @@ def getModel ():
             model_name='gemini-1.5-flash',
             system_instruction=instruction,
             safety_settings={genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_NONE,
-                             genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE  })
+                             genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE, 
+                             genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH, 
+                             genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE})
     return model
 
 def history (id):
