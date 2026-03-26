@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Load Environment Variables",
+            "type": "shell",
+            "command": "export $(grep -v '^#' .env | xargs)"
+        },
+        {
+            "label": "Debug & Setup Environment",
+            "type": "shell",
+            "command": "echo '--- Current Directory ---' && pwd && echo '--- Directory Content ---' && ls -F && echo '--- Starting Setup ---' && if [ ! -d '.venv' ]; then python3 -m venv .venv; fi && . .venv/bin/activate && if [ -f '.env' ]; then export $(grep -v '^#' .env | xargs); echo '.env loaded'; fi && pip install -r requirements.txt && echo '--- Setup Complete ---'",
+            "options": {
+                "cwd": "${workspaceFolder}" // 強制指定在專案根目錄執行
+            },
+            /*
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            */
+            "presentation": {
+                "reveal": "always", // 改為 always，這樣一打開你就能看到 pwd 的結果
+                "panel": "shared",
+                "focus": true
+            },
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "wsl.exe",
+                        "args": [
+                            "-d",
+                            "Ubuntu",
+                            "-e",
+                            "bash",
+                            "-c"
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

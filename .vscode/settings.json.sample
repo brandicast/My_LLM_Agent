@@ -1,0 +1,29 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/src"
+    ],
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.experiments.enabled": false,
+    "python.locator": "js",
+    "python.useEnvironmentsExtension": false,
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "terminal.integrated.profiles.linux": {
+        "bash": {
+            "path": "/bin/bash",
+            "args": [
+                "--rcfile",
+                "${workspaceFolder}/source_env.sh"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.linux": "bash"
+    /* 如果要單獨增加env parameter的話，但這次選擇用上面的方式，寫一個shell script，一次source
+    "terminal.integrated.env.linux": {
+        "API_KEY": "1234",
+        "TEST": "5678",
+        "PYTHONPATH": "${workspaceFolder}"
+    }
+        */
+}
