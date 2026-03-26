@@ -9,11 +9,15 @@ ADD . /code
 
 
 # 在 Image 中執行的指令：安裝 requirements.txt 中所指定的 dependencies
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Automatically find and install all plugin-specific dependencies
+RUN find src/tools -name "requirements.txt" -exec pip install --no-cache-dir -r {} +
 
 RUN mkdir -p history 
 
 ENV API_KEY={$YOU_API_KEY}
+ENV CWA_API_KEY={$CWA_API_KEY}
 
 VOLUME ['./history']
 

@@ -5,10 +5,7 @@ import os, time, threading, pickle
 from datetime import datetime
 
 from util.typing import Session
-
-
-
-
+from tools import loader
 import logging
 logger = logging.getLogger(__name__)
 
@@ -44,7 +41,7 @@ def loadChatSession ():
                  if history != '' :
                     model = getModel() 
                     session = Session()
-                    session.chat = model.start_chat(history=history)
+                    session.chat = model.start_chat(history=history, enable_automatic_function_calling=True)
                     session.timestamp = time.time() 
                     sessions_cache[str(f)] = session 
 
@@ -57,7 +54,7 @@ def ask (id, content):
         model = getModel()
         
         chat_session = Session()
-        chat_session.chat = model.start_chat(history=[])  # Load history from here
+        chat_session.chat = model.start_chat(history=[], enable_automatic_function_calling=True)  # Load history from here
         chat_session.timestamp = time.time()
 
         sessions_cache[id] = chat_session
@@ -132,25 +129,38 @@ def summarize_and_compress(user_id, session):
             {"role": "user", "parts": [f"這是我們之前的對話總結：\n{summary_content}"]},
             {"role": "model", "parts": ["好的，我已經記住了目前的對話背景。請繼續。"]}
         ]
-        session.chat = model.start_chat(history=new_history)
+        session.chat = model.start_chat(history=new_history, enable_automatic_function_calling=True)
         session.timestamp = time.time()
         logger.info(f"Compressed history for {user_id} using AI summary.")
     except Exception as e:
         logger.error(f"Failed to summarize history for {user_id}: {e}")
         # Fallback: just clear history or keep only the last few messages if summarization fails
-        session.chat = model.start_chat(history=[])
+        session.chat = model.start_chat(history=[], enable_automatic_function_calling=True)
 
 
 def getModel ():
     global model
     if model is None:
-        model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
-            system_instruction=instruction,
-            safety_settings={genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_NONE,
-                             genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE, 
-                             genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH, 
-                             genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE})
+        registry = loader.load_plugins()
+        plugin_tools = registry.get("tools", [])
+        
+        # When using tools with the Python SDK, if the list is empty,
+        # it's best to omit the tools parameter entirely rather than passing [].
+        kwargs = {
+            'model_name': 'gemini-2.5-flash',
+            'system_instruction': instruction,
+            'safety_settings': {
+                genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE, 
+                genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH, 
+                genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE
+            }
+        }
+        if plugin_tools:
+            kwargs['tools'] = plugin_tools
+            logger.info(f"Registered {len(plugin_tools)} tools with Gemini model.")
+            
+        model = genai.GenerativeModel(**kwargs)
     return model
 
 def get_history_size(history):
