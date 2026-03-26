@@ -2,7 +2,7 @@ import google.generativeai as genai
 from google.generativeai.types.generation_types import StopCandidateException
 
 import os, time, threading, pickle
-
+from datetime import datetime
 
 from util.typing import Session
 
@@ -16,6 +16,7 @@ genai.configure(api_key=os.environ["API_KEY"])
 
 model = None          # Hold A global GenAI model
 sessions_cache = {}   # Hold a session cache
+HISTORY_MAX_SIZE = 100 * 1024 # 100 KB
 last_dump_time = None
 
 GRACEFULLY_STOP = False 
@@ -64,6 +65,12 @@ def ask (id, content):
         
     session  = sessions_cache[id]
     
+    # Check if history size exceeds limit
+    if get_history_size(session.chat.history) > HISTORY_MAX_SIZE:
+        logger.info(f"History for {id} exceeds {HISTORY_MAX_SIZE} bytes. Compressing...")
+        archive_to_markdown(id, session.chat.history)
+        summarize_and_compress(id, session)
+
     logger.debug (session)
     #logger.debug (chat.history)
     try:
@@ -78,6 +85,61 @@ def ask (id, content):
 
     return answer
 
+def archive_to_markdown(user_id, history):
+    """Archive chat history to a Markdown file organized by date."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    folder_path = os.path.join('history', today)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path, exist_ok=True)
+    
+    file_path = os.path.join(folder_path, f"{user_id}.md")
+    
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(f"# Chat History for {user_id}\n")
+        f.write(f"Archived on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        for content in history:
+            role = "User" if content.role == "user" else "Bread (AI)"
+            f.write(f"### {role}:\n")
+            for part in content.parts:
+                if hasattr(part, 'text'):
+                    f.write(f"{part.text}\n")
+            f.write("\n---\n\n")
+    logger.info(f"Archived history for {user_id} to {file_path}")
+
+def summarize_and_compress(user_id, session):
+    """Summarize the chat history and replace it with the summary."""
+    model = getModel()
+    summary_prompt = (
+        "請簡短地總結以上的對話內容。這個總結將作為之後對話的上下文背景。"
+        "請務必保持簡潔，總結內容不要超過 2000 個字元。"
+    )
+    
+    try:
+        # We use the existing chat session to ask for a summary of itself
+        response = session.chat.send_message(summary_prompt)
+        summary_content = response.text
+        
+        # Safeguard: If the summary is still over 100KB, forcefully truncate it
+        # Actually, if it's over 100KB, it's very wrong, so we'll truncate it to 50KB to be safe.
+        summary_bytes = summary_content.encode('utf-8')
+        if len(summary_bytes) > HISTORY_MAX_SIZE:
+             logger.warning(f"Summary for {user_id} was too large ({len(summary_bytes)}), truncating.")
+             # Keep the end of the summary if it was long, or a fixed portion
+             summary_content = summary_bytes[-50000:].decode('utf-8', 'ignore') + "\n\n(Note: Summary truncated due to size)"
+
+        # Start a fresh chat with the summary as the initial context
+        new_history = [
+            {"role": "user", "parts": [f"這是我們之前的對話總結：\n{summary_content}"]},
+            {"role": "model", "parts": ["好的，我已經記住了目前的對話背景。請繼續。"]}
+        ]
+        session.chat = model.start_chat(history=new_history)
+        session.timestamp = time.time()
+        logger.info(f"Compressed history for {user_id} using AI summary.")
+    except Exception as e:
+        logger.error(f"Failed to summarize history for {user_id}: {e}")
+        # Fallback: just clear history or keep only the last few messages if summarization fails
+        session.chat = model.start_chat(history=[])
+
 
 def getModel ():
     global model
@@ -90,6 +152,15 @@ def getModel ():
                              genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH, 
                              genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE})
     return model
+
+def get_history_size(history):
+    """Estimate the size of the chat history in bytes."""
+    size = 0
+    for content in history:
+        for part in content.parts:
+            if hasattr(part, 'text'):
+                size += len(part.text.encode('utf-8'))
+    return size
 
 def history (id):
     data = '' 

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麵包國門戶 - Bread Country Portal</title>
+    <style>
+        :root {
+            --primary-color: #f39c12;
+            --secondary-color: #d35400;
+            --bg-color: #fef5e7;
+            --card-bg: #ffffff;
+            --text-color: #5d4037;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .container {
+            max-width: 800px;
+            width: 90%;
+            margin: 2rem 0;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        h1, h2 { margin-top: 0; }
+        a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover { text-decoration: underline; }
+        .endpoint {
+            background: #eee;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            display: block;
+            margin: 0.5rem 0;
+        }
+        footer {
+            margin-top: auto;
+            padding: 2rem;
+            font-size: 0.9rem;
+            color: #8d6e63;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🍞 歡迎來到麵包國 🐻</h1>
+        <p>我是國王麵包，很高興見到你！</p>
+    </header>
+    <div class="container">
+        <div class="card">
+            <h2>💬 與我聊天</h2>
+            <p>你可以透過以下連結與我對話（請將 <code>{user_id}</code> 換成你的名字，<code>{message}</code> 換成你想說的話）：</p>
+            <code class="endpoint">/chat/id/{user_id}?ask={message}</code>
+            <p>例如：<a href="/chat/id/訪客?ask=你好，你是誰？">點此與我打招呼</a></p>
+        </div>
+        
+        <div class="card">
+            <h2>📜 查看對話歷史</h2>
+            <p>查看特定用戶目前的對話記錄：</p>
+            <code class="endpoint">/chat/history/{user_id}</code>
+        </div>
+
+        <div class="card">
+            <h2>📂 檔案存檔</h2>
+            <p>瀏覽過去已存檔的對話記錄（Markdown 格式）：</p>
+            <a href="/archives">進入對話存檔庫</a>
+        </div>
+    </div>
+    <footer>
+        &copy; 2026 麵包國皇家政府 - 由 Gemini AI 驅動
+    </footer>
+</body>
+</html>
